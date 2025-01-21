@@ -1,0 +1,89 @@
+---
+title: "Gurruchaga_Lab#3"
+author: "Sofia Gurruchaga"
+date: "2024-09-19"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(readxl)
+library(candisc)
+library(tidyverse)
+library(ggplot2)
+Fitness <- read_excel("Downloads/Fitness.xls")
+View(Fitness)
+data<-as.data.frame(Fitness)
+```
+
+```{r}
+fit.mod<-lm(cbind(Age, Weight,Oxy,Runtime,RunPulse,RstPulse,MaxPulse)~Sex, data = data)
+fit.can<-candisc(fit.mod, data=data)
+summary(fit.can)
+```
+
+```{r}
+fit.w<-Wilks(fit.can)
+show(fit.w)
+```
+
+```{r}
+eigenvalue <-c(max(fit.can$eigenvalues),max(fit.can$eigenvalues/
+sum(fit.can$eigenvalues))*100,
+max(cumsum(fit.can$eigenvalues)/sum(fit.can$eigenvalues))*100,
+sqrt(fit.can$canrsq),
+fit.w$`LR test stat`, fit.w$`approx F`, fit.w$numDF, fit.w$denDF, fit.w$`Pr(> F)`)
+names(eigenvalue)<-c("Eigenvalue", "Percent", "Cum Percent", "Canonical Corr",
+"Likelihood Ratio",
+"Approx. F", "NumDF", "DenDF", "Prob>F")
+eigenvalue
+```
+
+```{r}
+fit.test<-matrix(0,4,5)
+colnames(fit.test)<-c("value", "F","NumDF", "DenDF", "Prob>F")
+rownames(fit.test)<-c("Wilks Lambda", "Pillai's Trace ", "Hotelling-Lawley", "Roy's Max
+Root" )
+fit.test[1,]<-c( 1-fit.can$canrsq, fit.w$`approx F`, fit.w$numDF, fit.w$denDF, fit.w$`Pr(> F)`)
+fit.test[2,]<-c( fit.can$canrsq,fit.w$`approx F`, fit.w$numDF, fit.w$denDF, fit.w$`Pr(> F)`)
+fit.test[3,]<-c( fit.can$canrsq/(1-fit.can$canrsq),fit.w$`approx F`, fit.w$numDF, fit.w$denDF,
+fit.w$`Pr(> F)`)
+fit.test[4,]<-c( max(fit.can$eigenvalues),fit.w$`approx F`, fit.w$numDF, fit.w$denDF, fit.w$`Pr(> F)`)
+fit.test
+```
+
+```{r}
+fit.can$coeffs.std
+```
+
+
+```{r}
+canonical.scores <- fit.can$scores
+predicted.labels <- fit.can$class
+plot(1:nrow(canonical.scores), canonical.scores$Can1, type = "p", pch = 19, col = "blue",
+     xlab = "Index", ylab = "Canonical Variable 1 (Can1)",
+     main = "Dot Plot of Canonical Discriminant Function")
+
+group_means <- tapply(canonical.scores$Can1, data$Sex, mean)
+points(c(1, 2), group_means, col = "red", pch = 3, cex = 2)
+```
+
+
+```{r}
+new_individual <- data.frame(Age = 50, Weight = 75, Oxy = 45, Runtime = 10, RunPulse = 170, RstPulse = 60, MaxPulse = 175)
+
+canonical_coeffs <- fit.can$coeffs.raw
+
+canonical_score2 <- as.matrix(new_individual) %*% canonical_coeffs
+canonical_score2
+```
+
+
+
